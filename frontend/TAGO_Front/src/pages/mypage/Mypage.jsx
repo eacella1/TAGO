@@ -4,6 +4,8 @@ import client from '../Api/client';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import QuickMenu from '../../components/QuickMenu/QuickMenu';
+import RouteLine from '../../components/RouteLine/RouteLine';
+import { dialog, notify } from '../../components/Dialog/dialogService';
 import useWishStore from '../../store/useWishStore';
 import './MyPage.css';
 
@@ -36,6 +38,9 @@ const formatDateTime = (dateStr) => {
   }
 };
 
+// 좌석 등급 코드 -> 표시 이름 (백엔드는 현재 STANDARD 만 내려준다)
+const GRADE_LABEL = { STANDARD: '일반실', FIRST: '특실', PREMIUM: '특실' };
+
 // 백엔드 MyTicketResponseDTO -> 화면 표시용 데이터 변환
 const parseTicket = (item) => {
   const dep = formatDateTime(item.depplandtime);
@@ -56,8 +61,8 @@ const parseTicket = (item) => {
     car: item.carNo ? `${item.carNo}호차` : '일반',
     seatNo: item.seatNo || '-',
     seat: item.seatNo || '-',
-    seatGrade: item.seatGrade || '어른',
-    passenger: item.seatGrade ? `${item.seatGrade} 1명` : '어른 1명',
+    seatGrade: GRADE_LABEL[item.seatGrade] || item.seatGrade || '어른',
+    passenger: `${GRADE_LABEL[item.seatGrade] || item.seatGrade || '어른'} 1명`,
     rawPrice,
     price: `${rawPrice.toLocaleString()}원`,
     hasRealTicketNumber: Boolean(item.ticketNumber),
@@ -101,6 +106,39 @@ const groupTickets = (rawList) => {
   }));
 };
 
+const MENU_ITEMS = [
+  { key: 'ticket', label: '승차권' },
+  { key: 'favorites', label: '찜한 열차' },
+  { key: 'profile', label: '내 정보' },
+];
+
+const TICKET_FILTERS = [
+  { key: 'ALL', label: '전체' },
+  { key: 'ACTIVE', label: '이용 예정' },
+  { key: 'CANCELLED', label: '취소·반환' },
+];
+
+// 상태는 색만으로 구분하지 않고 글자를 함께 쓴다
+const STATUS = {
+  CANCELLED: { label: '반환완료', cls: 'is-cancelled' },
+  HELD: { label: '결제대기', cls: 'is-held' },
+  CONFIRMED: { label: '발권완료', cls: 'is-ok' },
+};
+const statusOf = (status) => STATUS[status] || STATUS.CONFIRMED;
+
+const IconChevron = ({ className }) => (
+  <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="m5 12 5 5 9-10" />
+  </svg>
+);
+
 export default function MyPage() {
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('ticket');
@@ -138,28 +176,43 @@ export default function MyPage() {
     return true;
   });
 
-  // 현재 화면에 표시할 선택된 승차권
-  const activeTicket = filteredTickets.length > 0
-    ? (filteredTickets[selectedTicketIndex] || filteredTickets[0])
-    : null;
+  const countByFilter = (key) => ticketList.filter((t) => {
+    if (key === 'ACTIVE') return t.status !== 'CANCELLED';
+    if (key === 'CANCELLED') return t.status === 'CANCELLED';
+    return true;
+  }).length;
 
   // 승차권 예매 취소
-  const handleCancelTicket = async () => {
-    if (!activeTicket) return;
-    if (!window.confirm(`정말 [${activeTicket.trainName} / 좌석: ${activeTicket.car} ${activeTicket.seat}] 예매를 취소하시겠습니까?`)) {
-      return;
-    }
+  const handleCancelTicket = async (ticket) => {
+    if (!ticket) return;
+    const ok = await dialog.confirm(`[${ticket.trainName} / 좌석: ${ticket.car} ${ticket.seat}] 예매를 취소하시겠습니까?`, {
+      title: '승차권 반환',
+      confirmLabel: '예매 취소하기',
+      cancelLabel: '닫기',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
-      const rawSeqs = activeTicket.reservationSeqs?.length ? activeTicket.reservationSeqs : [activeTicket.reservationSeq];
+      const rawSeqs = ticket.reservationSeqs?.length ? ticket.reservationSeqs : [ticket.reservationSeq];
       const seqs = Array.from(new Set(rawSeqs.filter(Boolean)));
       await Promise.all(seqs.map((seq) => client.post(`/reservation/${seq}/cancel`)));
-      alert('승차권 예매가 정상적으로 취소되었습니다.');
+      notify.success('승차권 예매가 정상적으로 취소되었습니다.');
       await fetchMyTickets();
     } catch (error) {
       console.error('승차권 예매 취소 에러:', error);
-      alert(error.response?.data?.message || '승차권 예매 취소에 실패했습니다. 다시 시도해 주세요.');
+      dialog.alert(error.response?.data?.message || '승차권 예매 취소에 실패했습니다. 다시 시도해 주세요.', {
+        title: '취소 실패',
+        tone: 'error',
+      });
     }
+  };
+
+  const handleShowReceipt = (ticket) => {
+    dialog.alert(
+      `승차권: ${ticket.ticketNumber}\n열차: ${ticket.trainName}\n구간: ${ticket.depStation} -> ${ticket.arrStation}\n좌석: ${ticket.car} ${ticket.seat}\n결제금액: ${ticket.price}`,
+      { title: '영수증 정보' }
+    );
   };
 
   // 찜하기 중앙 스토어 연동 (메인·시각표·마이페이지 공통)
@@ -271,8 +324,7 @@ export default function MyPage() {
   useEffect(() => {
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (!token) {
-      alert('로그인이 필요한 서비스입니다.');
-      navigate('/login');
+      dialog.alert('로그인이 필요한 서비스입니다.', { title: '로그인 필요' }).then(() => navigate('/login'));
       return;
     }
 
@@ -307,10 +359,9 @@ export default function MyPage() {
       } catch (error) {
         console.error('마이페이지 초기 데이터 로딩 실패:', error);
         if (error.response?.status === 401) {
-          alert('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('id');
-          navigate('/login');
+          dialog.alert('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.', { title: '세션 만료', tone: 'warning' }).then(() => navigate('/login'));
         }
       } finally {
         setIsLoadingTickets(false);
@@ -356,10 +407,10 @@ export default function MyPage() {
 
       setOriginalUserInfo({ ...editUserInfo });
       setIsEditing(false);
-      alert('회원 정보가 성공적으로 수정되었습니다.');
+      notify.success('회원 정보가 성공적으로 수정되었습니다.');
     } catch (error) {
       console.error('회원 정보 수정 에러:', error);
-      alert('회원 정보 수정에 실패했습니다. 다시 시도해 주세요.');
+      notify.error('회원 정보 수정에 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
@@ -394,55 +445,55 @@ export default function MyPage() {
         },
       }).open();
     } else {
-      alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+      notify.warning('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
     }
   };
 
   const handleSendEmailAuth = async () => {
     try {
       const res = await client.post('/member/password/send-code');
-      alert(res.data?.message || `회원님의 가입 이메일(${originalUserInfo.email})로 6자리 인증번호가 발송되었습니다.`);
+      notify.success(res.data?.message || `회원님의 가입 이메일(${originalUserInfo.email})로 6자리 인증번호가 발송되었습니다.`);
       setEmailAuthStep(2);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || err.response?.data || '인증번호 발송에 실패했습니다.');
+      notify.error(err.response?.data?.message || err.response?.data || '인증번호 발송에 실패했습니다.');
     }
   };
 
   const handleVerifyEmailCode = async () => {
     if (!authCodeInput || authCodeInput.trim().length !== 6) {
-      alert('6자리 인증번호를 정확히 입력해 주세요.');
+      notify.warning('6자리 인증번호를 정확히 입력해 주세요.');
       return;
     }
     try {
       const res = await client.post('/member/password/verify', { code: authCodeInput.trim() });
-      alert(res.data?.message || '이메일 본인인증이 완료되었습니다.\n새로운 비밀번호를 설정해 주세요.');
+      notify.success(res.data?.message || '이메일 본인인증이 완료되었습니다. 새로운 비밀번호를 설정해 주세요.');
       setIsEmailVerified(true);
       setEmailAuthStep(3);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || err.response?.data || '인증번호가 일치하지 않거나 만료되었습니다.');
+      notify.error(err.response?.data?.message || err.response?.data || '인증번호가 일치하지 않거나 만료되었습니다.');
     }
   };
 
   const handleSavePassword = async (e) => {
     e.preventDefault();
     if (!isEmailVerified) {
-      alert('먼저 이메일 인증을 완료해 주세요.');
+      notify.warning('먼저 이메일 인증을 완료해 주세요.');
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      alert('새 비밀번호가 일치하지 않습니다.');
+      notify.warning('새 비밀번호가 일치하지 않습니다.');
       return;
     }
     if (newPassword.length < 8) {
-      alert('비밀번호는 최소 8자리 이상이어야 합니다.');
+      notify.warning('비밀번호는 최소 8자리 이상이어야 합니다.');
       return;
     }
 
     try {
       const res = await client.put('/member/password', { newPassword });
-      alert(res.data?.message || '비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 적용됩니다.');
+      notify.success(res.data?.message || '비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 적용됩니다.');
       setNewPassword('');
       setConfirmNewPassword('');
       setAuthCodeInput('');
@@ -450,7 +501,7 @@ export default function MyPage() {
       setEmailAuthStep(1);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || err.response?.data || '비밀번호 변경에 실패했습니다.');
+      notify.error(err.response?.data?.message || err.response?.data || '비밀번호 변경에 실패했습니다.');
     }
   };
 
@@ -459,555 +510,300 @@ export default function MyPage() {
       <Header isLoggedIn={true} showTopBar={true} />
 
       <main className="mypage-container">
-        <div className="mypage-title-row">
-          <h1>마이페이지</h1>
-          <p>승차권 확인 및 회원 정보를 관리할 수 있습니다.</p>
+        <div className="mypage-head">
+          <h1 className="ui-title">마이페이지</h1>
+          <p className="mypage-who">
+            <strong>{originalUserInfo.name ? `${originalUserInfo.name} 님` : '회원 님'}</strong>
+            <span>@{originalUserInfo.userId || 'user'}</span>
+          </p>
         </div>
 
-        <div className="mypage-grid">
-          <aside className="mypage-sidebar">
-            <div className="profile-card">
-              <span className="user-icon">TAGO MEMBER</span>
-              <strong className="member-name">{originalUserInfo.name ? `${originalUserInfo.name} 님` : '회원 님'}</strong>
-              <span className="member-id">@{originalUserInfo.userId || 'user'}</span>
-            </div>
+        <div className="ui-segment mypage-tabs" role="tablist" aria-label="마이페이지 메뉴">
+          {MENU_ITEMS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              role="tab"
+              id={`mypage-tab-${item.key}`}
+              aria-selected={activeMenu === item.key}
+              aria-controls="mypage-panel"
+              onClick={() => setActiveMenu(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-            <nav className="mypage-menu">
-              <button 
-                type="button" 
-                className={`menu-btn ${activeMenu === 'ticket' ? 'active' : ''}`}
-                onClick={() => setActiveMenu('ticket')}
-              >
-                발권 승차권 확인
-              </button>
-              <button 
-                type="button" 
-                className={`menu-btn ${activeMenu === 'favorites' ? 'active' : ''}`}
-                onClick={() => setActiveMenu('favorites')}
-              >
-                찜하기 목록
-              </button>
-              <button 
-                type="button" 
-                className={`menu-btn ${activeMenu === 'profile' ? 'active' : ''}`}
-                onClick={() => setActiveMenu('profile')}
-              >
-                회원 정보 관리
-              </button>
-            </nav>
-          </aside>
-
-          <section className="content-section">
-            {activeMenu === 'ticket' && (
-              <div className="ticket-display-card">
-                <div className="card-top-header">
-                  <div>
-                    <h2>발권 승차권 조회</h2>
-                    <p className="card-subtitle" style={{ margin: '4px 0 0', fontSize: '13px', color: '#666' }}>
-                      동일 열차·호차의 좌석은 하나의 승차권으로 묶어 표시됩니다. 목록에서 승차권을 선택하세요.
-                    </p>
-                  </div>
-                  <div className="korail-filter-tabs">
-                    <button
-                      type="button"
-                      className={`korail-tab-btn ${ticketFilter === 'ALL' ? 'active' : ''}`}
-                      onClick={() => { setTicketFilter('ALL'); setSelectedTicketIndex(0); }}
-                    >
-                      전체 ({ticketList.length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`korail-tab-btn ${ticketFilter === 'ACTIVE' ? 'active' : ''}`}
-                      onClick={() => { setTicketFilter('ACTIVE'); setSelectedTicketIndex(0); }}
-                    >
-                      발권완료 ({ticketList.filter((t) => t.status !== 'CANCELLED').length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`korail-tab-btn ${ticketFilter === 'CANCELLED' ? 'active' : ''}`}
-                      onClick={() => { setTicketFilter('CANCELLED'); setSelectedTicketIndex(0); }}
-                    >
-                      반환/취소 ({ticketList.filter((t) => t.status === 'CANCELLED').length})
-                    </button>
-                  </div>
-                </div>
-
-                {isLoadingTickets ? (
-                  <div className="ticket-empty-card" style={{ padding: '40px 0' }}>
-                    <p>승차권 정보를 불러오는 중입니다...</p>
-                  </div>
-                ) : filteredTickets.length > 0 && activeTicket ? (
-                  <div className="korail-ticket-layout">
-                    {/* 코레일 스타일 승차권 목록 테이블 */}
-                    <div className="korail-table-scroll">
-                      <table className="korail-ticket-table">
-                        <thead>
-                          <tr>
-                            <th>승차일</th>
-                            <th>열차</th>
-                            <th>구간 (출발 → 도착)</th>
-                            <th>호차 · 좌석</th>
-                            <th>매수 / 운임</th>
-                            <th>상태</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredTickets.map((ticket, idx) => {
-                            const isSelected = (filteredTickets[selectedTicketIndex] ? selectedTicketIndex === idx : idx === 0);
-                            return (
-                              <tr
-                                key={`${ticket.reservationSeq}_${idx}`}
-                                className={isSelected ? 'selected' : ''}
-                                onClick={() => setSelectedTicketIndex(idx)}
-                              >
-                                <td className="td-date">{ticket.depDate}</td>
-                                <td className="td-train">
-                                  <span className="korail-mini-badge">{ticket.trainType}</span>
-                                  <strong>{ticket.trainName.replace(`${ticket.trainType} `, '')}</strong>
-                                </td>
-                                <td className="td-route">
-                                  <span>{ticket.depStation}({ticket.depTime})</span>
-                                  <span className="route-arrow">→</span>
-                                  <span>{ticket.arrStation}({ticket.arrTime})</span>
-                                </td>
-                                <td className="td-seat">{ticket.car} · {ticket.seat}</td>
-                                <td className="td-price">{ticket.reservationSeqs.length}매 / {ticket.price}</td>
-                                <td className="td-status">
-                                  <span className={`korail-status-pill ${ticket.status === 'CANCELLED' ? 'cancelled' : ticket.status === 'HELD' ? 'held' : 'confirmed'}`}>
-                                    {ticket.status === 'CANCELLED' ? '반환완료' : ticket.status === 'HELD' ? '결제대기' : '발권완료'}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* 코레일톡 스타일 모바일 승차권 상세 카드 */}
-                    <div className="korail-ticket-card">
-                      <div className="korail-ticket-top">
-                        <div className="ticket-train-meta">
-                          <span className="korail-ktx-pill">{activeTicket.trainType}</span>
-                          <strong className="korail-train-title">{activeTicket.trainName}</strong>
-                        </div>
-                        <div className="korail-top-right">
-                          <span className="korail-ticket-date">{activeTicket.depDate}</span>
-                          <span className={`korail-status-pill ${activeTicket.status === 'CANCELLED' ? 'cancelled' : activeTicket.status === 'HELD' ? 'held' : 'confirmed'}`}>
-                            {activeTicket.status === 'CANCELLED' ? '반환완료' : activeTicket.status === 'HELD' ? '결제대기' : '발권완료'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="korail-ticket-body">
-                        <div className="korail-route-row">
-                          <div className="korail-station">
-                            <span className="korail-station-name">{activeTicket.depStation}</span>
-                            <strong className="korail-station-time">{activeTicket.depTime}</strong>
-                          </div>
-                          <div className="korail-route-mid">
-                            <span className="korail-route-tag">직통</span>
-                            <div className="korail-route-line">
-                              <span className="dot" />
-                              <span className="arrow">▶</span>
-                            </div>
-                          </div>
-                          <div className="korail-station arr">
-                            <span className="korail-station-name">{activeTicket.arrStation}</span>
-                            <strong className="korail-station-time">{activeTicket.arrTime}</strong>
-                          </div>
-                        </div>
-
-                        <div className="korail-perforation" />
-
-                        <div className="korail-detail-grid">
-                          <div className="korail-detail-cell">
-                            <span className="cell-label">호차</span>
-                            <strong className="cell-val blue">{activeTicket.car}</strong>
-                          </div>
-                          <div className="korail-detail-cell">
-                            <span className="cell-label">좌석번호</span>
-                            <strong className="cell-val blue">{activeTicket.seat}</strong>
-                          </div>
-                          <div className="korail-detail-cell">
-                            <span className="cell-label">승객 / 등급</span>
-                            <strong className="cell-val">{activeTicket.passenger}</strong>
-                          </div>
-                          <div className="korail-detail-cell">
-                            <span className="cell-label">결제 운임</span>
-                            <strong className="cell-val">{activeTicket.price}</strong>
-                          </div>
-                        </div>
-
-                        <div className="korail-qr-footer">
-                          <div className="qr-box">
-                            <div className="qr-fake-visual korail-qr">
-                              <span>■ ■ ■ ■ ■<br/>■ □ □ □ ■<br/>■ □ ■ □ ■<br/>■ □ □ □ ■<br/>■ ■ ■ ■ ■</span>
-                            </div>
-                            <div className="korail-qr-meta">
-                              <span className="korail-qr-hint">개찰구 QR 리더기에 스캔하여 탑승하세요.</span>
-                              <span className="korail-ticket-no">승차권 번호: {activeTicket.ticketNumber}</span>
-                            </div>
-                          </div>
-                          <div className="ticket-actions">
-                            <button 
-                              type="button" 
-                              className="btn-korail-outline"
-                              onClick={() => alert(`[영수증 정보]\n승차권: ${activeTicket.ticketNumber}\n열차: ${activeTicket.trainName}\n구간: ${activeTicket.depStation} -> ${activeTicket.arrStation}\n좌석: ${activeTicket.car} ${activeTicket.seat}\n결제금액: ${activeTicket.price}`)}
-                            >
-                              영수증 조회
-                            </button>
-                            {activeTicket.status === 'CANCELLED' ? (
-                              <button type="button" className="btn-korail-disabled" disabled>
-                                반환 완료
-                              </button>
-                            ) : (
-                              <button type="button" className="btn-korail-danger" onClick={handleCancelTicket}>
-                                승차권 반환
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="ticket-empty-card">
-                    <p>현재 발권된 승차권 내역이 없습니다.</p>
-                    <button type="button" className="btn-go-booking" onClick={() => navigate('/')}>
-                      승차권 예매하기 →
-                    </button>
-                  </div>
-                )}
+        <section id="mypage-panel" role="tabpanel" aria-labelledby={`mypage-tab-${activeMenu}`} className="mypage-panel">
+          {activeMenu === 'ticket' && (
+            <>
+              <div className="ui-segment tk-filter" role="group" aria-label="승차권 상태 필터">
+                {TICKET_FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    aria-pressed={ticketFilter === f.key}
+                    onClick={() => { setTicketFilter(f.key); setSelectedTicketIndex(0); }}
+                  >
+                    {f.label} <span className="num">{countByFilter(f.key)}</span>
+                  </button>
+                ))}
               </div>
-            )}
 
-            {activeMenu === 'favorites' && (
-              <div className="favorites-display-card">
-                <div className="card-top-header">
-                  <div>
-                    <div className="fav-header-title-row">
-                      <h2>찜하기 목록</h2>
-                      <span className="fav-storage-tag">관심 열차 보관함</span>
-                    </div>
-                    <p className="card-subtitle">
-                      자주 이용하거나 찜해두신 KTX 열차를 한눈에 확인하고 빠르게 예매할 수 있습니다.
-                    </p>
-                  </div>
-                  <span className="favorites-count-badge">총 {favorites.length}편성 등록됨</span>
-                </div>
-
-                {favorites.length > 0 ? (
-                  <div className="favorites-list-container">
-                    {favorites.map((train) => (
-                      <div key={train.id || train.name} className="favorite-train-card">
-                        <div className="fav-card-header">
-                          <div className="fav-header-left">
-                            <span className="badge-ktx">{train.type || 'KTX'}</span>
-                            <strong className="fav-train-no">{train.name}</strong>
-                            <span className="fav-seat-class">1~18호차 일반실</span>
-                            <span className="fav-direct-tag">직통</span>
-                          </div>
-                          <div className="fav-header-right">
-                            <span className="fav-heart-status">♥ 찜 등록됨</span>
-                          </div>
-                        </div>
-
-                        <div className="fav-card-body">
-                          <div className="fav-station-col dep">
-                            <span className="station-name">{train.depStation || '서울'}</span>
-                            <span className="station-time">{train.depTime}</span>
-                          </div>
-
-                          <div className="fav-timeline-col">
-                            <span className="fav-duration-chip">⏱ {train.duration}</span>
-                            <div className="fav-track-line">
-                              <span className="track-dot start"></span>
-                              <div className="track-bar"></div>
-                              <span className="track-train-icon">🚆</span>
-                              <div className="track-bar"></div>
-                              <span className="track-dot end"></span>
-                            </div>
-                          </div>
-
-                          <div className="fav-station-col arr">
-                            <span className="station-name">{train.arrStation || '부산'}</span>
-                            <span className="station-time">{train.arrTime}</span>
-                          </div>
-
-                          <div className="fav-fare-col">
-                            <span className="fare-type">일반실 운임</span>
-                            <strong className="fare-price">{train.price}원</strong>
-                          </div>
-                        </div>
-
-                        <div className="fav-card-footer">
-                          <span className="fav-footer-hint">실시간 잔여 좌석을 바로 확인하고 예매할 수 있습니다.</span>
-                          <div className="fav-footer-actions">
-                            <button 
-                              type="button" 
-                              className="btn-fav-remove"
-                              onClick={() => handleRemoveFavorite(train.scheduleSeq || train.id)}
-                              title="관심 열차 목록에서 삭제"
-                            >
-                              찜 삭제
-                            </button>
-                            <button 
-                              type="button" 
-                              className="btn-fav-book"
-                              onClick={() => handleBookFavoriteTrain(train)}
-                            >
-                              좌석 선택 및 바로 예매 →
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="favorites-empty-box">
-                    <div className="empty-heart-icon">♥</div>
-                    <p>등록된 관심 KTX 열차가 없습니다.</p>
-                    <span className="empty-sub">
-                      메인페이지의 실시간 운행 현황이나 운행 시각표에서 하트(♡)를 눌러 자주 타는 열차를 찜해 보세요.
-                    </span>
-                    <button 
-                      type="button" 
-                      className="btn-go-schedule"
-                      onClick={() => navigate('/schedule')}
-                    >
-                      KTX 열차 시각표 보러가기 →
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeMenu === 'profile' && (
-              <div className="profile-edit-container">
-                <div className="edit-card">
-                  <div className="card-top-header">
-                    <div>
-                      <h2>회원 기본 정보</h2>
-                      <p className="card-subtitle">
-                        {isEditing ? '회원 정보를 수정한 후 [수정 완료]를 눌러주세요.' : '[회원정보 수정하기]를 누르면 정보를 변경할 수 있습니다.'}
-                      </p>
-                    </div>
-                    {!isEditing && (
-                      <button type="button" className="btn-start-edit" onClick={handleStartEdit}>
-                        회원정보 수정하기
-                      </button>
-                    )}
-                  </div>
-
-                  <form onSubmit={handleSaveProfile} className="profile-form">
-                    <div className="form-group">
-                      <label>아이디</label>
-                      <div className="input-wrap disabled">
-                        <input type="text" value={editUserInfo.userId} disabled placeholder="아이디" />
-                      </div>
-                      <span className="form-note">아이디는 고유 식별자로 변경할 수 없습니다.</span>
-                    </div>
-
-                    <div className="form-group">
-                      <label>이름</label>
-                      <div className={`input-wrap ${!isEditing ? 'read-only' : ''}`}>
-                        <input 
-                          type="text" 
-                          name="name" 
-                          value={editUserInfo.name} 
-                          onChange={handleUserInfoChange} 
-                          disabled={!isEditing}
-                          placeholder="이름"
-                          required 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label>이메일</label>
-                      <div className={`input-wrap ${!isEditing ? 'read-only' : ''}`}>
-                        <input 
-                          type="email" 
-                          name="email" 
-                          value={editUserInfo.email} 
-                          onChange={handleUserInfoChange} 
-                          disabled={!isEditing}
-                          placeholder="이메일"
-                          required 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label>휴대전화 번호</label>
-                      <div className={`input-wrap ${!isEditing ? 'read-only' : ''}`}>
-                        <input 
-                          type="tel" 
-                          name="phone" 
-                          value={editUserInfo.phone} 
-                          onChange={handleUserInfoChange} 
-                          disabled={!isEditing}
-                          placeholder="휴대전화 번호"
-                          required 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label>주소</label>
-                      <div className="postcode-row">
-                        <div className={`input-wrap postcode-input-wrap ${!isEditing ? 'read-only' : ''}`}>
-                          <input 
-                            type="text" 
-                            name="postcode" 
-                            value={editUserInfo.postcode} 
-                            readOnly 
-                            placeholder="우편번호"
-                          />
-                        </div>
-                        {isEditing && (
-                          <button 
-                            type="button" 
-                            className="btn-address-search" 
-                            onClick={handleOpenKakaoPostcode}
-                          >
-                            우편번호 찾기
-                          </button>
-                        )}
-                      </div>
-
-                      <div className={`input-wrap ${!isEditing ? 'read-only' : ''}`} style={{ marginTop: '8px' }}>
-                        <input 
-                          type="text" 
-                          name="address" 
-                          value={editUserInfo.address} 
-                          readOnly 
-                          placeholder="기본 주소"
-                        />
-                      </div>
-
-                      <div className={`input-wrap ${!isEditing ? 'read-only' : ''}`} style={{ marginTop: '8px' }}>
-                        <input 
-                          type="text" 
-                          id="editDetailAddressInput"
-                          name="detailAddress" 
-                          value={editUserInfo.detailAddress} 
-                          onChange={handleUserInfoChange} 
-                          placeholder="상세 주소를 입력하세요"
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="edit-action-row">
-                        <button type="submit" className="btn-save-profile">
-                          수정 완료
-                        </button>
-                        <button type="button" className="btn-cancel-profile" onClick={handleCancelEdit}>
-                          취소
-                        </button>
-                      </div>
-                    )}
-                  </form>
-                </div>
-
-                <div className="edit-card" style={{ marginTop: '24px' }}>
-                  <div className="card-top-header">
-                    <div>
-                      <h2>비밀번호 변경 (이메일 인증)</h2>
-                      <p className="card-subtitle">안전한 계정 보호를 위해 등록된 이메일 본인인증 후 비밀번호를 변경할 수 있습니다.</p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleSavePassword} className="profile-form">
-                    <div className="form-group">
-                      <label>인증 대상 이메일</label>
-                      <div className="email-auth-row">
-                        <div className="input-wrap flex-1 disabled">
-                          <input type="email" value={originalUserInfo.email} disabled placeholder="인증 대상 이메일" />
-                        </div>
-                        <button 
-                          type="button" 
-                          className="btn-email-auth"
-                          onClick={handleSendEmailAuth}
-                          disabled={isEmailVerified || !originalUserInfo.email}
+              {isLoadingTickets ? (
+                <p className="mypage-empty" role="status">승차권 정보를 불러오는 중입니다.</p>
+              ) : filteredTickets.length > 0 ? (
+                <ul className="tk-list">
+                  {filteredTickets.map((ticket, idx) => {
+                    const st = statusOf(ticket.status);
+                    const open = selectedTicketIndex === idx;
+                    const bodyId = `tk-body-${idx}`;
+                    return (
+                      <li key={`${ticket.reservationSeq}_${idx}`} className={`tk ${st.cls}`}>
+                        <button
+                          type="button"
+                          className="tk__head"
+                          aria-expanded={open}
+                          aria-controls={bodyId}
+                          onClick={() => setSelectedTicketIndex(open ? -1 : idx)}
                         >
-                          {isEmailVerified ? '인증 완료됨' : emailAuthStep === 1 ? '인증번호 발송' : '재발송'}
+                          <span className="tk__top">
+                            <span className="tk__date num">{ticket.depDate}</span>
+                            <span className={`tk__status ${st.cls}`}>{st.label}</span>
+                            <IconChevron className="tk__chev" />
+                          </span>
+
+                          <span className="tk__seat">
+                            <span className="tk__car"><b className="num">{ticket.carNo ?? '-'}</b>호차</span>
+                            <b className="tk__no num">{ticket.seat}</b>
+                          </span>
+
+                          <RouteLine
+                            size="sm"
+                            depTime={ticket.depTime}
+                            arrTime={ticket.arrTime}
+                            depStation={ticket.depStation}
+                            arrStation={ticket.arrStation}
+                          />
+
+                          <span className="tk__train">
+                            <span className="num">{ticket.trainName}</span>
+                            <span className="num">{ticket.passenger} · {ticket.price}</span>
+                          </span>
                         </button>
-                      </div>
-                    </div>
 
-                    {emailAuthStep >= 2 && !isEmailVerified && (
-                      <div className="form-group auth-code-group">
-                        <label>이메일 인증번호 6자리</label>
-                        <div className="email-auth-row">
-                          <div className="input-wrap flex-1">
-                            <input 
-                              type="text" 
-                              maxLength="6"
-                              placeholder="인증번호 6자리를 입력하세요" 
-                              value={authCodeInput}
-                              onChange={(e) => setAuthCodeInput(e.target.value)}
-                            />
+                        {open && (
+                          <div className="tk__body" id={bodyId}>
+                            <dl className="kv">
+                              <div className="kv__row">
+                                <dt>승차권 번호</dt>
+                                <dd className="num">{ticket.ticketNumber}</dd>
+                              </div>
+                              <div className="kv__row">
+                                <dt>매수</dt>
+                                <dd className="num">{ticket.reservationSeqs.length}매</dd>
+                              </div>
+                            </dl>
+                            <div className="tk__actions">
+                              <button type="button" className="ui-btn ui-btn--neutral" onClick={() => handleShowReceipt(ticket)}>
+                                영수증 조회
+                              </button>
+                              {ticket.status === 'CANCELLED' ? (
+                                <button type="button" className="ui-btn ui-btn--neutral" disabled>
+                                  반환 완료
+                                </button>
+                              ) : (
+                                <button type="button" className="ui-btn ui-btn--danger" onClick={() => handleCancelTicket(ticket)}>
+                                  승차권 반환
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <button 
-                            type="button" 
-                            className="btn-email-verify"
-                            onClick={handleVerifyEmailCode}
-                          >
-                            인증 확인
-                          </button>
-                        </div>
-                        <span className="auth-hint">이메일 수신함에서 인증번호를 확인해 주세요.</span>
-                      </div>
-                    )}
-
-                    {isEmailVerified && (
-                      <div className="new-password-section">
-                        <div className="verified-badge-row">
-                          <span className="verified-icon">✓</span>
-                          <span>이메일 본인인증이 정상적으로 완료되었습니다.</span>
-                        </div>
-
-                        <div className="form-group" style={{ marginTop: '14px' }}>
-                          <label>새 비밀번호</label>
-                          <div className="input-wrap">
-                            <input 
-                              type="password" 
-                              placeholder="새로운 비밀번호 (8자리 이상)" 
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              required 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label>새 비밀번호 확인</label>
-                          <div className="input-wrap">
-                            <input 
-                              type="password" 
-                              placeholder="새로운 비밀번호 재입력" 
-                              value={confirmNewPassword}
-                              onChange={(e) => setConfirmNewPassword(e.target.value)}
-                              required 
-                            />
-                          </div>
-                        </div>
-
-                        <button type="submit" className="btn-save-profile">
-                          비밀번호 변경 완료
-                        </button>
-                      </div>
-                    )}
-                  </form>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="mypage-empty">
+                  <p>{ticketFilter === 'CANCELLED' ? '반환한 승차권이 없습니다.' : '발권된 승차권이 없습니다.'}</p>
+                  <button type="button" className="ui-btn ui-btn--weak" onClick={() => navigate('/')}>
+                    승차권 예매하기
+                  </button>
                 </div>
+              )}
+            </>
+          )}
+
+          {activeMenu === 'favorites' && (
+            <>
+              {favorites.length > 0 ? (
+                <ul className="fv-list">
+                  {favorites.map((train) => (
+                    <li key={train.id || train.name} className="fv">
+                      <RouteLine
+                        size="sm"
+                        depTime={train.depTime}
+                        arrTime={train.arrTime}
+                        depStation={train.depStation || '서울'}
+                        arrStation={train.arrStation || '부산'}
+                        duration={train.duration}
+                      />
+                      <p className="fv__meta">
+                        <span className="num">{train.name}</span>
+                        <span className="num">일반실 {train.price}원</span>
+                      </p>
+                      <div className="fv__actions">
+                        <button
+                          type="button"
+                          className="ui-btn ui-btn--neutral"
+                          onClick={() => handleRemoveFavorite(train.scheduleSeq || train.id)}
+                        >
+                          찜 삭제
+                        </button>
+                        <button type="button" className="ui-btn" onClick={() => handleBookFavoriteTrain(train)}>
+                          좌석 선택
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mypage-empty">
+                  <p>찜한 열차가 없습니다.</p>
+                  <button type="button" className="ui-btn ui-btn--weak" onClick={() => navigate('/schedule')}>
+                    운행 시간표 보기
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeMenu === 'profile' && (
+            <>
+              <div className="pf">
+                <div className="pf__head">
+                  <h2 className="ui-heading">내 정보</h2>
+                  {!isEditing && (
+                    <button type="button" className="ui-btn ui-btn--weak ui-btn--sm" onClick={handleStartEdit}>
+                      수정
+                    </button>
+                  )}
+                </div>
+
+                {!isEditing ? (
+                  <dl className="kv">
+                    <div className="kv__row"><dt>아이디</dt><dd>{originalUserInfo.userId}</dd></div>
+                    <div className="kv__row"><dt>이름</dt><dd>{originalUserInfo.name}</dd></div>
+                    <div className="kv__row"><dt>이메일</dt><dd>{originalUserInfo.email}</dd></div>
+                    <div className="kv__row"><dt>휴대전화</dt><dd className="num">{originalUserInfo.phone}</dd></div>
+                    <div className="kv__row">
+                      <dt>주소</dt>
+                      <dd>
+                        {originalUserInfo.postcode && <span className="num">({originalUserInfo.postcode}) </span>}
+                        {originalUserInfo.address} {originalUserInfo.detailAddress}
+                      </dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <form onSubmit={handleSaveProfile} className="pf-form">
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pf-id">아이디</label>
+                      <input id="pf-id" className="ui-field__control" type="text" value={editUserInfo.userId} disabled />
+                      <span className="ui-field__help">아이디는 변경할 수 없습니다.</span>
+                    </div>
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pf-name">이름</label>
+                      <input id="pf-name" className="ui-field__control" type="text" name="name" value={editUserInfo.name} onChange={handleUserInfoChange} required />
+                    </div>
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pf-email">이메일</label>
+                      <input id="pf-email" className="ui-field__control" type="email" name="email" value={editUserInfo.email} onChange={handleUserInfoChange} required />
+                    </div>
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pf-phone">휴대전화 번호</label>
+                      <input id="pf-phone" className="ui-field__control" type="tel" name="phone" inputMode="tel" value={editUserInfo.phone} onChange={handleUserInfoChange} required />
+                    </div>
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pf-postcode">주소</label>
+                      <div className="field-row">
+                        <input id="pf-postcode" className="ui-field__control" type="text" name="postcode" value={editUserInfo.postcode} readOnly placeholder="우편번호" />
+                        <button type="button" className="ui-btn ui-btn--neutral" onClick={handleOpenKakaoPostcode}>
+                          우편번호 찾기
+                        </button>
+                      </div>
+                      <input className="ui-field__control" type="text" name="address" value={editUserInfo.address} readOnly placeholder="기본 주소" aria-label="기본 주소" />
+                      <input className="ui-field__control" type="text" id="editDetailAddressInput" name="detailAddress" value={editUserInfo.detailAddress} onChange={handleUserInfoChange} placeholder="상세 주소를 입력하세요" aria-label="상세 주소" />
+                    </div>
+                    <div className="pf-actions">
+                      <button type="button" className="ui-btn ui-btn--neutral" onClick={handleCancelEdit}>취소</button>
+                      <button type="submit" className="ui-btn">수정 완료</button>
+                    </div>
+                  </form>
+                )}
               </div>
-            )}
-          </section>
-        </div>
+
+              <div className="pf">
+                <div className="pf__head">
+                  <h2 className="ui-heading">비밀번호 변경</h2>
+                </div>
+                <p className="pf__lead">등록된 이메일로 본인 인증을 한 뒤 변경할 수 있습니다.</p>
+
+                <form onSubmit={handleSavePassword} className="pf-form">
+                  <div className="ui-field">
+                    <label className="ui-field__label" htmlFor="pw-email">인증 이메일</label>
+                    <div className="field-row">
+                      <input id="pw-email" className="ui-field__control" type="email" value={originalUserInfo.email} disabled />
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn--neutral"
+                        onClick={handleSendEmailAuth}
+                        disabled={isEmailVerified || !originalUserInfo.email}
+                      >
+                        {isEmailVerified ? '인증 완료' : emailAuthStep === 1 ? '인증번호 받기' : '다시 받기'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {emailAuthStep >= 2 && !isEmailVerified && (
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor="pw-code">인증번호 6자리</label>
+                      <div className="field-row">
+                        <input
+                          id="pw-code"
+                          className="ui-field__control num"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength="6"
+                          placeholder="6자리 숫자"
+                          value={authCodeInput}
+                          onChange={(e) => setAuthCodeInput(e.target.value)}
+                        />
+                        <button type="button" className="ui-btn" onClick={handleVerifyEmailCode}>확인</button>
+                      </div>
+                      <span className="ui-field__help">이메일 수신함에서 인증번호를 확인해 주세요.</span>
+                    </div>
+                  )}
+
+                  {isEmailVerified && (
+                    <>
+                      <p className="pf-verified"><IconCheck /> 이메일 본인 인증이 완료되었습니다.</p>
+                      <div className="ui-field">
+                        <label className="ui-field__label" htmlFor="pw-new">새 비밀번호</label>
+                        <input id="pw-new" className="ui-field__control" type="password" autoComplete="new-password" placeholder="8자리 이상" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                      </div>
+                      <div className="ui-field">
+                        <label className="ui-field__label" htmlFor="pw-new2">새 비밀번호 확인</label>
+                        <input id="pw-new2" className="ui-field__control" type="password" autoComplete="new-password" placeholder="한 번 더 입력" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+                      </div>
+                      <button type="submit" className="ui-btn ui-btn--lg ui-btn--block">비밀번호 변경</button>
+                    </>
+                  )}
+                </form>
+              </div>
+            </>
+          )}
+        </section>
       </main>
 
       <QuickMenu />
