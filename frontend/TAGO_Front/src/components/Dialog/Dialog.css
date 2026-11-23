@@ -1,0 +1,180 @@
+/* 알림 시스템: 토스트(비차단) + 모달(차단) — 평평한 모바일 앱 감각
+   토스트: 어두운 중립 바탕 + 흰 글씨, 화면 아래 중앙에 떠서 나타난다.
+   모달: 흰 카드(24px), 버튼 두 개는 가로 나란히(왼쪽 neutral, 오른쪽 주요). */
+
+/* ---------- 토스트 ---------- */
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  --toast-accent: var(--ktx-blue);
+  --toast-accent-bg: var(--ktx-blue-subtle);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 6px 8px 14px;
+  color: var(--white);
+  background: var(--ktx-navy);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  animation: toast-in 0.22s ease-out;
+}
+.toast--success { --toast-accent: var(--status-ok);     --toast-accent-bg: var(--status-ok-bg); }
+.toast--warning { --toast-accent: var(--status-warn);   --toast-accent-bg: var(--status-warn-bg); }
+.toast--error   { --toast-accent: var(--status-danger); --toast-accent-bg: var(--status-danger-bg); }
+.toast__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--toast-accent);
+  background: var(--toast-accent-bg);
+}
+.toast__icon svg { width: 18px; height: 18px; }
+.toast__text {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--white);
+  white-space: pre-line;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.toast__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--gray-300);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.toast__close:hover { background: rgba(255, 255, 255, 0.12); color: var(--white); }
+.toast__close:focus-visible { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); border-radius: 12px; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 모달 ---------- */
+.dlg-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--gray-900) 56%, transparent);
+  animation: dlg-fade 0.18s ease-out;
+}
+.dlg {
+  --dlg-accent: var(--ktx-blue);
+  --dlg-accent-bg: var(--ktx-blue-subtle);
+  position: relative;
+  width: min(400px, 100%);
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: dlg-in 0.2s ease-out;
+}
+.dlg--success { --dlg-accent: var(--status-ok);     --dlg-accent-bg: var(--status-ok-bg); }
+.dlg--warning { --dlg-accent: var(--status-warn);   --dlg-accent-bg: var(--status-warn-bg); }
+.dlg--error   { --dlg-accent: var(--status-danger); --dlg-accent-bg: var(--status-danger-bg); }
+
+.dlg__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 32px 24px 20px;
+  text-align: center;
+}
+.dlg__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  color: var(--dlg-accent);
+  background: var(--dlg-accent-bg);
+}
+.dlg__icon svg { width: 24px; height: 24px; }
+.dlg__title {
+  margin: 0 0 8px;
+  font-size: var(--text-heading);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--gray-900);
+  word-break: keep-all;
+}
+.dlg__message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--gray-600);
+  white-space: pre-line;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 버튼: 가로 나란히. 왼쪽 neutral, 오른쪽 주요(danger 면 붉은 주요). 공통 .ui-btn 을 재사용한다. */
+.dlg__actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 20px 20px;
+}
+.dlg__actions .dlg__btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 12px;
+  font-size: 16px;
+  line-height: 1.3;
+  white-space: normal;       /* "좌석 해제하고 돌아가기" 같은 긴 라벨은 두 줄로 */
+  word-break: keep-all;
+  border-radius: 16px;
+}
+.dlg__actions .dlg__btn.is-danger {
+  --btn-bg: var(--status-danger);
+  --btn-fg: var(--white);
+  --btn-bg-hover: color-mix(in srgb, var(--status-danger) 85%, black);
+}
+
+@keyframes dlg-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dlg-in   { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* 모바일: 토스트가 하단 고정 버튼(.ui-bottom-cta 등)을 가리지 않도록 그 높이만큼 위로 띄운다.
+   하단 고정 영역이 있는 화면은 --ui-bottom-cta-h(px, 안전 영역 포함)를 :root 에 지정한다.
+   지정하지 않은 화면은 표준 큰 버튼 1개(56px + 여백) 높이를 기본값으로 쓴다. */
+@media (max-width: 720px) {
+  .toast-stack {
+    bottom: calc(var(--ui-bottom-cta-h, calc(88px + env(safe-area-inset-bottom, 0px))) + 12px);
+  }
+}
+
+@media (max-width: 480px) {
+  .dlg__body { padding: 28px 20px 16px; }
+  .dlg__actions { padding: 8px 16px 16px; }
+}

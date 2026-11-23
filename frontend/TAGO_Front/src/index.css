@@ -3,48 +3,81 @@
    ========================================================= */
 
 :root {
-  /* KTX Official & Modern Navy Palette */
-  --ktx-blue: #004ea2;           /* KTX Signature Blue */
-  --ktx-blue-dark: #003570;
-  --ktx-blue-light: #f0f5fc;
-  --ktx-blue-subtle: #e1ecfa;
-  
-  --color-primary: #004ea2;
-  --color-primary-hover: #003a7a;
-  
-  /* Modern Neutral Grayscale */
-  --gray-900: #0f172a;           /* Deep Dark Text */
-  --gray-800: #1e293b;
-  --gray-700: #334155;
-  --gray-600: #475569;
-  --gray-500: #64748b;
-  --gray-400: #94a3b8;
-  --gray-300: #cbd5e1;
-  --gray-200: #e2e8f0;
-  --gray-100: #f1f5f9;
-  --gray-50: #f8fafc;
+  /* ---------------------------------------------------------
+     디자인 방향: 평평한 카드 + 큰 둥근 버튼 + 회색 입력창 + 하단 고정 CTA
+     (토스 TDS 가 공개한 원칙·패턴을 참고하되, 토큰 값은 이 서비스의 자체 값이다.
+      TDS 패키지/UI Kit/폰트/로고/브랜드 hex 는 사용하지 않는다 — DESIGN.md 참고)
+     --------------------------------------------------------- */
+
+  /* 브랜드: KTX 블루 계열을 조금 밝게 */
+  --ktx-blue: #0f62d6;
+  --ktx-blue-dark: #0b4fb0;
+  --ktx-blue-light: #f1f6fe;
+  --ktx-blue-subtle: #e3edfc;
+  --color-primary: #0f62d6;
+  --color-primary-hover: #0b4fb0;
+
+  /* 중립색 (자체 스케일) */
+  --gray-900: #171c24;
+  --gray-800: #2d3541;
+  --gray-700: #444e5b;
+  --gray-600: #5f6a77;
+  --gray-500: #7a8491;
+  --gray-400: #a9b1bb;
+  --gray-300: #cdd3da;
+  --gray-200: #e3e7ec;
+  --gray-100: #f1f3f6;
+  --gray-50: #f7f8fa;
   --white: #ffffff;
+  --page-bg: #f2f4f7;              /* 페이지 바탕: 연한 회색 위에 흰 카드 */
 
-  /* Accent */
-  --accent-red: #d32f2f;
-  --accent-green: #059669;
+  --accent-red: #e5383b;
+  --accent-green: #0e9f63;
 
-  /* Elevation & Shadows - Subtle & Clean */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  /* 그림자는 거의 쓰지 않는다. 떠 있는 것(시트·토스트·다이얼로그)에만 */
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 2px rgba(23, 28, 36, 0.05);
+  --shadow-md: 0 2px 10px rgba(23, 28, 36, 0.07);
+  --shadow-lg: 0 12px 32px rgba(23, 28, 36, 0.16);
 
-  /* Radius - Sophisticated & Moderate */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* 모서리: 카드 20 · 버튼/입력 14 · 작은 요소 10 */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
+  --transition-fast: 0.12s ease-out;
+  --transition-normal: 0.2s ease-out;
+
+  /* ---- 노선 정체성 (승차권 · 노선) ---- */
+  --ktx-navy: #1b2430;             /* 어두운 중립(푸터·토스트) */
+  --ktx-navy-2: #2d3541;
+  --ktx-sky: #eef4fd;              /* 정보 영역 배경 */
+  --ktx-sky-line: #d6e4fa;
+
+  /* 좌석·운행 상태 (색만으로 구분하지 않는다: 텍스트/아이콘 병행) */
+  --status-ok: #047857;
+  --status-ok-bg: #e8f7f0;
+  --status-warn: #b45309;
+  --status-warn-bg: #fff3e0;
+  --status-danger: #c62828;
+  --status-danger-bg: #feeced;
+  --status-muted: #5f6a77;
+  --status-muted-bg: #f1f3f6;
+
+  --focus-ring: 0 0 0 3px rgba(15, 98, 214, 0.35);
+
+  /* 숫자(시각·요금)가 핵심 정보 */
+  --text-time-lg: 32px;
+  --text-time-md: 24px;
+
+  /* 타이포 스케일 (크게, 굵게) */
+  --text-title: 28px;              /* 페이지 제목 */
+  --text-heading: 20px;            /* 섹션 제목 */
+  --text-body: 16px;
+  --text-caption: 13px;
 }
 
 * {
@@ -55,7 +88,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
-  background-color: var(--gray-50);
+  background-color: var(--page-bg);
   color: var(--gray-900);
   line-height: 1.5;
   letter-spacing: -0.3px;
@@ -145,3 +178,258 @@ input, select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-400);
 }
+
+/* =========================================================
+   공통 유틸 · 접근성
+   ========================================================= */
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* outline 을 없앴으므로 키보드 포커스는 반드시 여기서 보여준다 */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =========================================================
+   상태 칩 (.chip--ok / warn / danger / muted / info)
+   ========================================================= */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+.chip--ok     { color: var(--status-ok);     background: var(--status-ok-bg); }
+.chip--warn   { color: var(--status-warn);   background: var(--status-warn-bg); }
+.chip--danger { color: var(--status-danger); background: var(--status-danger-bg); }
+.chip--muted  { color: var(--status-muted);  background: var(--status-muted-bg); }
+.chip--info   { color: var(--ktx-blue);      background: var(--ktx-blue-subtle); }
+
+/* =========================================================
+   승차권 카드 (.ticket) — 점선 절취선 + 반원 홈
+   구조: .ticket > .ticket__main + .ticket__stub
+   ========================================================= */
+.ticket {
+  --ticket-outside: var(--page-bg);  /* 카드 바깥 배경색 (홈 색) */
+  position: relative;
+  display: flex;
+  background: var(--white);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+.ticket__main { flex: 1; min-width: 0; padding: 20px 24px; }
+.ticket__stub {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 24px;
+  border-left: 2px dashed var(--gray-300);
+}
+.ticket__stub::before,
+.ticket__stub::after {
+  content: '';
+  position: absolute;
+  left: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ticket-outside);
+  border: 0;
+}
+.ticket__stub::before { top: -9px;    clip-path: inset(50% 0 0 0); }
+.ticket__stub::after  { bottom: -9px; clip-path: inset(0 0 50% 0); }
+@media (hover: hover) {
+  .ticket--interactive:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+}
+@media (max-width: 720px) {
+  .ticket { flex-direction: column; }
+  .ticket__stub { border-left: 0; border-top: 2px dashed var(--gray-300); flex-direction: row; align-items: center; justify-content: space-between; }
+  .ticket__stub::before { top: -9px; left: -9px; clip-path: inset(0 0 0 50%); }
+  .ticket__stub::after  { top: -9px; left: auto; right: -9px; bottom: auto; clip-path: inset(0 50% 0 0); }
+}
+
+/* =========================================================
+   선로 패턴 (.rail-pattern) — 히어로 하단 선로·침목 모티프
+   ========================================================= */
+.rail-pattern { position: relative; overflow: hidden; }
+.rail-pattern::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 14px;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,.28), rgba(255,255,255,.28)) 0 3px / 100% 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.28), rgba(255,255,255,.28)) 0 9px / 100% 2px no-repeat,
+    repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 3px, transparent 3px 22px);
+}
+
+
+/* =========================================================
+   공통 부품 (ui-*) — 모든 페이지가 같은 모양을 쓰도록 여기서만 정의한다
+   ========================================================= */
+
+/* ---- 버튼: fill(주요) / weak(보조) / neutral / danger-weak, 크기 lg·md·sm ---- */
+.ui-btn {
+  --btn-bg: var(--ktx-blue);
+  --btn-fg: var(--white);
+  --btn-bg-hover: var(--ktx-blue-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+}
+.ui-btn:hover { background: var(--btn-bg-hover); }
+.ui-btn:active { transform: scale(0.98); }
+.ui-btn:disabled, .ui-btn[aria-disabled="true"] {
+  color: var(--gray-500);
+  background: var(--gray-200);
+  cursor: not-allowed;
+  transform: none;
+}
+.ui-btn--lg { min-height: 56px; padding: 0 24px; font-size: 17px; border-radius: 16px; }
+.ui-btn--sm { min-height: 36px; padding: 0 14px; font-size: 14px; border-radius: var(--radius-sm); }
+.ui-btn--block { display: flex; width: 100%; }
+.ui-btn--weak     { --btn-bg: var(--ktx-blue-subtle); --btn-fg: var(--ktx-blue-dark); --btn-bg-hover: #d3e2fa; }
+.ui-btn--neutral  { --btn-bg: var(--gray-100); --btn-fg: var(--gray-800); --btn-bg-hover: var(--gray-200); }
+.ui-btn--danger   { --btn-bg: var(--status-danger-bg); --btn-fg: var(--status-danger); --btn-bg-hover: #fbdadc; }
+
+/* ---- 카드: 평평한 흰 카드(테두리·그림자 없음) ---- */
+.ui-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+/* ---- 입력창: 회색 채움, 포커스 시 파란 테두리 ---- */
+.ui-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ui-field__label { font-size: var(--text-caption); font-weight: 600; color: var(--gray-600); }
+.ui-field__control {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 16px;
+  font-size: 17px;
+  color: var(--gray-900);
+  background: var(--gray-100);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.ui-field__control::placeholder { color: var(--gray-400); }
+.ui-field__control:focus { background: var(--white); border-color: var(--ktx-blue); box-shadow: none; }
+.ui-field__control[aria-invalid="true"] { border-color: var(--status-danger); background: var(--status-danger-bg); }
+.ui-field__help { font-size: var(--text-caption); color: var(--gray-600); }
+.ui-field__error { font-size: var(--text-caption); font-weight: 500; color: var(--status-danger); }
+
+/* ---- 리스트 행: 왼쪽 아이콘 / 가운데 내용 / 오른쪽 값·화살표 ---- */
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 4px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+.ui-row--tap { cursor: pointer; transition: background var(--transition-fast); }
+.ui-row--tap:hover { background: var(--gray-50); }
+.ui-row--tap:active { background: var(--gray-100); }
+.ui-row__main { flex: 1; min-width: 0; }
+.ui-row__title { font-size: 16px; font-weight: 600; color: var(--gray-900); }
+.ui-row__sub { font-size: var(--text-caption); color: var(--gray-600); }
+.ui-row__right { flex: none; font-size: 15px; color: var(--gray-600); }
+
+/* ---- 세그먼트: 회색 트랙 위에 흰 선택 칸 ---- */
+.ui-segment { display: inline-flex; gap: 2px; padding: 4px; background: var(--gray-100); border-radius: 12px; }
+.ui-segment > button {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-600);
+  border-radius: 9px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.ui-segment > button[aria-pressed="true"], .ui-segment > button[aria-selected="true"] {
+  color: var(--gray-900);
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- 하단 고정 CTA: 모바일에서 화면 아래에 붙는 큰 버튼 ---- */
+.ui-bottom-cta {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--white) 70%, rgba(255, 255, 255, 0));
+}
+
+/* ---- 제목 ---- */
+.ui-title { font-size: var(--text-title); font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; color: var(--gray-900); }
+.ui-heading { font-size: var(--text-heading); font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; color: var(--gray-900); }
+
+/* =========================================================
+   노선색 (이 서비스의 자체 값). 노선 이름을 항상 같이 표시해서 색만으로 구분하지 않는다.
+   ========================================================= */
+:root {
+  --line-gyeongbu: #1f6feb;     /* 경부선 */
+  --line-honam: #d9480f;        /* 호남선 */
+  --line-jeonla: #0b9a6d;       /* 전라선 */
+  --line-gyeongjeon: #7b4fd0;   /* 경전선 */
+  --line-donghae: #0a8ca8;      /* 동해선 */
+}
+[data-line="경부선"] { --line-color: var(--line-gyeongbu); }
+[data-line="호남선"] { --line-color: var(--line-honam); }
+[data-line="전라선"] { --line-color: var(--line-jeonla); }
+[data-line="경전선"] { --line-color: var(--line-gyeongjeon); }
+[data-line="동해선"] { --line-color: var(--line-donghae); }
