@@ -1,15 +1,19 @@
 /* =========================================================
-   TAGO Header Styles - Modern Minimal
+   TAGO Header — 평평한 흰 헤더
+   낮고 조용한 상단 유틸 바 + 흰색 메인 헤더(현재 탭 = 굵은 글씨 + 파란 밑줄)
    ========================================================= */
 
+/* ---------- 운행 정보 바 (역 전광판 느낌) ----------
+   왼쪽 현재 시각 / 가운데 곧 출발 열차 티커 / 오른쪽 계정·고객센터 링크 */
 .top-bar {
-  background-color: var(--gray-900);
-  font-size: 11px;
-  color: var(--gray-400);
-  height: 32px;
+  position: relative;
+  z-index: 1001; /* 링크의 44px 터치 영역이 아래 헤더 위로 겹치도록 */
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  height: 40px;
+  font-size: var(--text-caption);
+  color: var(--gray-300);
+  background-color: var(--ktx-navy);
 }
 
 .top-bar-inner {
@@ -17,48 +21,197 @@
   max-width: calc(100% - 40px);
   margin: 0 auto;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  height: 100%;
 }
 
-.top-bar-left {
-  font-weight: 500;
-  letter-spacing: -0.2px;
+/* 현재 시각 */
+.station-clock {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
 }
 
+.station-clock__dot {
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  animation: station-pulse 2s ease-in-out infinite;
+}
+
+.station-clock__time {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--white);
+}
+
+.station-clock__date { color: var(--gray-300); }
+
+@keyframes station-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+/* 곧 출발 티커: 한 줄씩 4초마다 넘어간다. 마우스·키보드 포커스 시 멈춤(JS) */
+.nd {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.nd__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  color: var(--white);
+  border-radius: var(--radius-xs);
+}
+
+.nd__link::after {
+  content: '';
+  position: absolute;
+  inset: -2px -8px;
+}
+
+.nd__tag {
+  flex: none;
+  padding: 1px 8px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--white);
+  background: var(--ktx-blue);
+  border-radius: var(--radius-xs);
+}
+
+.nd__viewport {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.nd__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  animation: nd-in 0.28s ease-out;
+}
+
+.nd__time { font-size: 15px; font-weight: 700; color: var(--white); }
+.nd__day { font-size: var(--text-caption); font-weight: 700; color: var(--gray-300); margin-right: 6px; }
+
+.nd__route {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--gray-100);
+}
+
+.nd__arrow { flex: none; color: var(--gray-400); }
+.nd__train { color: var(--gray-300); }
+.nd__count { flex: none; color: var(--gray-400); }
+
+.nd__link:hover .nd__route { text-decoration: underline; text-underline-offset: 3px; }
+
+@keyframes nd-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 오른쪽 링크 */
 .top-bar-right {
+  flex: none;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.top-bar-right a, .top-bar-right span {
-  color: var(--gray-400);
-  text-decoration: none;
+.top-bar-right a,
+.top-bar-right span { color: var(--gray-300); }
+
+.top-bar-right a {
+  position: relative;
   transition: color var(--transition-fast);
+}
+
+/* 글자는 작게, 터치/클릭 영역은 44px 확보 */
+.top-bar-right a::after {
+  content: '';
+  position: absolute;
+  inset: -12px -6px;
 }
 
 .top-bar-right a:hover {
   color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.top-bar-right .divider {
-  color: var(--gray-600);
-  font-size: 10px;
+.top-bar-right .divider { color: var(--gray-400); font-size: var(--text-caption); }
+.top-bar-right .lang-tag { font-weight: 700; color: var(--white); }
+
+/* 어두운 바탕에서는 기본 포커스 링(연한 파랑)이 안 보이므로 흰 링으로 */
+.top-bar a:focus-visible {
+  box-shadow: 0 0 0 2px var(--white);
+  border-radius: var(--radius-xs);
+}
+.top-bar .nd__link:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--white);
 }
 
-.top-bar-right .lang-tag {
-  font-weight: 700;
-  color: var(--gray-200);
-}
-
-/* Main Header */
+/* ---------- Main header ---------- */
 .header {
-  height: 68px;
-  background-color: var(--white);
-  border-bottom: 1px solid var(--gray-200);
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  height: 64px;
+  position: relative;
+  background-color: var(--white);
+}
+
+/* 하단 선로 모티프(장식): ::after = 레일 두 줄, ::before = 침목. 높이 6px */
+.header::before,
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  pointer-events: none;
+}
+
+.header::after {
+  background:
+    linear-gradient(var(--ktx-blue), var(--ktx-blue)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--ktx-blue), var(--ktx-blue)) 0 100% / 100% 2px no-repeat;
+  opacity: 0.3;
+}
+
+.header::before {
+  background: repeating-linear-gradient(90deg, var(--ktx-blue) 0 3px, transparent 3px 14px);
+  opacity: 0.16;
 }
 
 .header.sticky {
@@ -80,56 +233,82 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  text-decoration: none;
+  min-height: 44px;
+  color: var(--ktx-blue);
 }
 
+.logo-mark { flex: none; }
+
 .logo-brand {
-  font-size: 26px;
-  font-weight: 900;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
   color: var(--gray-900);
-  letter-spacing: -1px;
 }
 
 .logo-badge-ktx {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--ktx-blue);
-  background: var(--ktx-blue-light);
-  border: 1px solid var(--ktx-blue-subtle);
   padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ktx-blue-dark);
+  background: var(--ktx-blue-subtle);
   border-radius: var(--radius-xs);
-  letter-spacing: 0.5px;
 }
 
-/* Nav Menu */
+/* Nav: 현재 탭은 굵은 글씨 + 파란 밑줄 (+ aria-current) */
 .main-menu {
-  margin-left: 50px;
+  align-self: stretch;
   display: flex;
   gap: 4px;
+  margin-left: 32px;
 }
 
 .nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--gray-700);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  white-space: nowrap;
+  transition: color var(--transition-fast);
 }
 
-.nav-link:hover {
-  color: var(--ktx-blue);
-  background-color: var(--ktx-blue-light);
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--ktx-blue);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
+
+.nav-link__icon { flex: none; }
+
+.nav-link:hover { color: var(--gray-900); }
 
 .nav-link.active {
-  color: var(--ktx-blue);
-  background-color: var(--ktx-blue-light);
   font-weight: 700;
+  color: var(--ktx-blue-dark);
 }
 
-/* Auth Buttons */
+.nav-link.active::after { opacity: 1; }
+
+.nav-link:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ktx-blue);
+  border-radius: var(--radius-sm);
+}
+
+/* Auth buttons: ui-btn(회색 / 파랑) 을 헤더 크기에 맞춘다 */
 .member-menu {
   margin-left: auto;
   display: flex;
@@ -138,54 +317,70 @@
 }
 
 .btn-auth {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  transition: all var(--transition-fast);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 12px;
 }
 
-.btn-auth.login {
-  color: var(--gray-700);
-  border: 1px solid var(--gray-200);
-  background: var(--white);
-}
-
-.btn-auth.login:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--gray-900);
-}
-
-.btn-auth.signup {
-  background: var(--ktx-blue);
-  color: var(--white);
-}
-
-.btn-auth.signup:hover {
-  background: var(--ktx-blue-dark);
-}
-
-.btn-auth.logout {
-  color: var(--gray-600);
-  border: 1px solid var(--gray-200);
-}
-
-.btn-auth.logout:hover {
-  background: #fee2e2;
-  color: var(--accent-red);
-  border-color: #fca5a5;
-}
-
+/* ---------- Tablet / Mobile ---------- */
 @media (max-width: 900px) {
-  .top-bar {
-    display: none;
+  /* 계정·고객센터 링크는 아래 헤더의 버튼과 겹치므로 좁은 화면에서는 뺀다 */
+  .top-bar-right { display: none; }
+
+  .header { height: auto; }
+
+  .header-container {
+    flex-wrap: wrap;
+    min-height: 56px;
   }
+
+  /* 모바일에서도 탭을 숨기지 않는다: 두 번째 줄에 3등분 탭 */
   .main-menu {
-    display: none;
+    order: 3;
+    flex: 0 0 100%;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
   }
+
+  .nav-link {
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 14px;
+  }
+
+  .nav-link::after { left: 8px; right: 8px; }
+}
+
+/* 모바일: 운행 정보 바는 높이(40px)를 유지하고 시각 + 티커 한 줄만 남긴다 */
+@media (max-width: 720px) {
+  .top-bar-inner { gap: 12px; }
+  .station-clock__date { display: none; }
+  .nd { justify-content: flex-start; }
+  .nd__link { padding: 0; gap: 8px; }
+  .nd__link::after { inset: -2px -4px; }
+  .nd__count { display: none; }
+}
+
+@media (max-width: 480px) {
+  .nd__tag { display: none; }
+  .nd__train { display: none; }
+}
+
+@media (max-width: 400px) {
+  .btn-auth { padding: 0 12px; font-size: 13px; }
+  .logo { gap: 6px; }
+  .logo-mark { width: 34px; height: auto; }
+}
+
+@media (max-width: 360px) {
+  .nav-link__icon { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .station-clock__dot,
+  .nd__item { animation: none; }
 }

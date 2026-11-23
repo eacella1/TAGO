@@ -1,0 +1,9 @@
+.occ { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--gray-700); white-space: nowrap; }
+.occ__bar { display: inline-flex; gap: 2px; }
+.occ__seg { width: 7px; height: 14px; border-radius: 2px; background: var(--gray-200); }
+.occ[data-level="ok"]     .occ__seg.is-on { background: var(--status-ok); }
+.occ[data-level="normal"] .occ__seg.is-on { background: var(--ktx-blue); }
+.occ[data-level="busy"]   .occ__seg.is-on { background: var(--status-warn); }
+.occ[data-level="low"]    .occ__seg.is-on,
+.occ[data-level="sold"]   .occ__seg.is-on { background: var(--status-danger); }
+.occ[data-level="sold"] { color: var(--status-muted); }

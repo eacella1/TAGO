@@ -1,75 +1,85 @@
-/* QuickMenu - Minimal */
+/* QuickMenu — 우측 고정 바로가기(평평한 흰 카드 + 얇은 선). 콘텐츠(1160px)와 겹치지 않는 1400px 이상에서만 노출 */
 .quick-menu {
   position: fixed;
-  right: 24px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 120px;
+  width: 104px;
+  padding: 8px;
   background: var(--white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-200);
-  overflow: hidden;
+  border-radius: var(--radius-lg);
   z-index: 990;
 }
 
 .quick-menu-header {
-  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gray-100);
-  border-bottom: 1px solid var(--gray-200);
+  height: 28px;
 }
 
 .quick-menu-title {
-  font-weight: 700;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--gray-600);
-  letter-spacing: -0.2px;
 }
 
 .quick-menu-list {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .quick-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
-  padding: 10px 14px;
+  min-height: 64px;
+  padding: 10px 4px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--gray-700);
-  text-decoration: none;
-  border-bottom: 1px solid var(--gray-100);
-  transition: all var(--transition-fast);
+  line-height: 1.25;
   text-align: center;
+  color: var(--gray-700);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.quick-menu-item:hover {
-  background-color: var(--ktx-blue-light);
-  color: var(--ktx-blue);
-  font-weight: 600;
+.quick-menu-item:hover { background-color: var(--gray-100); color: var(--gray-900); }
+
+/* 현재 페이지: 굵은 글씨 + 연한 파랑 바탕 + aria-current */
+.quick-menu-item.active {
+  background-color: var(--ktx-blue-subtle);
+  color: var(--ktx-blue-dark);
+  font-weight: 700;
 }
+
+.quick-menu-item:focus-visible { box-shadow: inset 0 0 0 2px var(--ktx-blue); border-radius: var(--radius-md); }
 
 .quick-top-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
-  padding: 8px 0;
-  background: var(--white);
-  color: var(--gray-500);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.quick-top-btn:hover {
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
   background: var(--gray-100);
-  color: var(--gray-900);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
-@media (max-width: 1280px) {
-  .quick-menu {
-    display: none;
-  }
+.quick-top-btn:hover { background: var(--gray-200); }
+.quick-top-btn:active { transform: scale(0.98); }
+.quick-top-btn:focus-visible { box-shadow: inset 0 0 0 2px var(--ktx-blue); border-radius: var(--radius-md); }
+
+@media (max-width: 1399px) {
+  .quick-menu { display: none; }
 }

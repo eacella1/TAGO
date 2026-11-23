@@ -1,0 +1,76 @@
+/* 노선 라인: ●━━━[2시간 35분]━━━○ */
+.route {
+  --route-time-size: var(--text-time-md);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.route--lg { --route-time-size: var(--text-time-lg); gap: 20px; }
+.route--sm { --route-time-size: 18px; gap: 10px; }
+
+.route__end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: none;
+  min-width: 56px;
+}
+.route__end--arr { align-items: flex-end; }
+
+.route__time {
+  font-size: var(--route-time-size);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--gray-900);
+}
+.route__station {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  white-space: nowrap;
+}
+
+.route__track {
+  flex: 1;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.route__rail {
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--line-color, var(--ktx-blue)), var(--ktx-sky-line));
+}
+.route__rail:last-of-type {
+  background: linear-gradient(90deg, var(--ktx-sky-line), var(--line-color, var(--ktx-blue)));
+}
+.route__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--line-color, var(--ktx-blue));
+  background: var(--white);
+}
+.route__dot--start { background: var(--line-color, var(--ktx-blue)); }
+.route__duration {
+  flex: none;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ktx-blue);
+  background: var(--ktx-sky);
+  border: 1px solid var(--ktx-sky-line);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .route--lg { --route-time-size: 26px; gap: 12px; }
+  .route__track { min-width: 48px; }
+  .route__duration { padding: 2px 8px; }
+}
