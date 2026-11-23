@@ -1,0 +1,643 @@
+/* =========================================================
+   결제 단계 본문 폼 (PaymentPanel) — 평평한 카드 안의 큰 입력
+   - 탭은 .ui-segment, 입력은 .ui-field(회색 채움 56px), 버튼은 .ui-btn (index.css 공통 부품)
+   - 약관은 리스트 행(체크 + 문구 + "보기"), 간편결제는 큼직한 선택 카드
+   - 색/토큰은 src/index.css 의 :root 만 사용한다.
+     예외: 간편결제 타일의 브랜드 색(워드마크 = 로고 취급)
+   ========================================================= */
+
+.pf {
+  min-width: 0;
+}
+
+.pf-reset {
+  min-width: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pf-reset:disabled {
+  cursor: progress;
+}
+
+.pf-reset:disabled .ui-field__control,
+.pf-reset:disabled .ui-segment > button,
+.pf-reset:disabled .pf-tile,
+.pf-reset:disabled .pf-radio,
+.pf-reset:disabled .pf-check {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+/* hidden 속성이 display 지정에 덮이지 않도록 */
+.pf-panel[hidden],
+.pf-terms__body[hidden] {
+  display: none;
+}
+
+/* ---- 데모 안내 ---- */
+.pf-demo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--status-warn-bg);
+  border-radius: var(--radius-md);
+}
+
+.pf-demo__icon {
+  flex: none;
+  color: var(--status-warn);
+}
+
+.pf-demo__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--gray-800);
+  word-break: keep-all;
+}
+
+.pf-demo__text strong {
+  font-weight: 700;
+}
+
+.pf .pf-demo__btn {
+  flex: none;
+  font-size: 15px;
+}
+
+/* ---- 섹션 ---- */
+.pf-section {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.pf-section__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+/* ---- 주문 정보 한 줄 ---- */
+.pf-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  padding: 14px 16px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--gray-800);
+}
+
+.pf-order__item {
+  white-space: nowrap;
+}
+
+.pf-order__item:first-child {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.pf-order__sep {
+  margin: 0 8px;
+  color: var(--gray-500);
+}
+
+/* ---- 결제 수단 탭 (.ui-segment) : 한 줄 가득, 터치 영역 48px ---- */
+.pf-tabs.ui-segment {
+  display: flex;
+  width: 100%;
+}
+
+.pf-tabs.ui-segment > button {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 15px;
+  line-height: 1.25;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.pf-tabs.ui-segment > button[aria-selected='true'] {
+  color: var(--ktx-blue-dark);
+  font-weight: 700;
+}
+
+.pf-tab__icon {
+  flex: none;
+}
+
+.pf-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ---- 필드 (.ui-field 위에 배치만) ---- */
+.pf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 16px;
+}
+
+.pf-field--full {
+  grid-column: 1 / -1;
+}
+
+.pf-label-row {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* 회색 채움 위에서도 읽히도록 placeholder 를 조금 진하게 */
+.pf .ui-field__control::placeholder {
+  color: var(--gray-600);
+}
+
+.pf .ui-field__control.pf-input--center {
+  padding: 0 4px;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+.pf-select {
+  position: relative;
+}
+
+.pf-select select.ui-field__control {
+  appearance: none;
+  padding-right: 44px;
+  cursor: pointer;
+}
+
+.pf-select select.is-empty {
+  color: var(--gray-600);
+}
+
+.pf-select select option {
+  color: var(--gray-900);
+}
+
+.pf-select svg {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  color: var(--gray-600);
+  pointer-events: none;
+}
+
+.pf-cardnum {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* 오류: 필드 바로 아래, 아이콘 + 문구 */
+.pf-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+
+.pf-error svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---- 라디오 (개인/법인, 현금영수증): 회색 채움 선택 칸 ---- */
+.pf-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-radio {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-800);
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.pf-radio input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--ktx-blue);
+  cursor: pointer;
+}
+
+.pf-radio:has(input:checked) {
+  font-weight: 700;
+  color: var(--ktx-blue-dark);
+  background: var(--ktx-blue-subtle);
+}
+
+.pf-radio:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+/* ---- 간편결제: 평평하고 큼직한 선택 카드 ---- */
+.pf-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pf-tile {
+  position: relative;
+  min-height: 128px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--gray-100);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.pf-tile:active {
+  transform: scale(0.98);
+}
+
+/* 라디오는 타일 전체를 덮어 클릭·키보드를 받는다(화살표로 이동) */
+.pf-tile input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pf-tile__mark {
+  flex: 1;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radius-md);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+/* 브랜드 색: 로고(워드마크)이므로 본문 대비 규칙 대상이 아니다. 앱 이름은 아래 캡션에 어두운 글자로 따로 쓴다. */
+.pf-tile__mark.is-kakao { background: #fee500; color: var(--gray-900); }
+.pf-tile__mark.is-naver { background: #03c75a; color: var(--white); }
+.pf-tile__mark.is-toss  { background: #0064ff; color: var(--white); }
+.pf-tile__mark.is-payco { background: #fa2d2d; color: var(--white); }
+
+.pf-tile__name {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gray-800);
+}
+
+.pf-tile__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  background: var(--ktx-blue);
+  border-radius: 50%;
+}
+
+/* 선택: 연한 파랑 채움 + 파란 윤곽선 + 체크 표시 + 캡션 굵게 (색 외에 체크·굵기로도 구분) */
+.pf-tile.is-selected {
+  background: var(--ktx-blue-light);
+  outline: 2px solid var(--ktx-blue);
+  outline-offset: -2px;
+}
+
+.pf-tile.is-selected .pf-tile__check {
+  display: inline-flex;
+}
+
+.pf-tile.is-selected .pf-tile__name {
+  font-weight: 700;
+  color: var(--ktx-blue-dark);
+}
+
+.pf-tile:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+/* ---- 안내 박스 (정보 영역) ---- */
+.pf-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--ktx-sky);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--gray-800);
+  word-break: keep-all;
+}
+
+.pf-notice svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--ktx-blue);
+}
+
+.pf-notice strong {
+  font-weight: 700;
+}
+
+/* ---- 약관: 리스트 행 (체크 + 문구 + "보기") ---- */
+.pf-terms {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pf-terms__all {
+  padding: 0 16px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+}
+
+.pf-terms__list {
+  list-style: none;
+}
+
+.pf-terms .pf-terms__row {
+  min-height: 56px;
+  gap: 4px;
+  padding: 0 0 0 16px;
+  border-radius: 0;
+}
+
+.pf-check {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--gray-800);
+  cursor: pointer;
+  word-break: keep-all;
+}
+
+.pf-check input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--ktx-blue);
+  cursor: pointer;
+}
+
+.pf-check--all {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.pf-req {
+  margin-right: 6px;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ktx-blue-dark);
+}
+
+.pf-link-btn {
+  flex: none;
+  min-width: 64px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-600);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .pf-link-btn:hover {
+    background: var(--gray-100);
+  }
+}
+
+.pf-link-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.pf-link-btn[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.pf-terms__body {
+  margin: 0 0 8px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  word-break: keep-all;
+}
+
+/* =========================================================
+   결제 진행 오버레이: 흰 카드 + 큰 스피너 (사이드바 요약 · 하단 결제 바 위, 대화상자 아래)
+   ========================================================= */
+.pay-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: color-mix(in srgb, var(--gray-900) 58%, transparent);
+  animation: pay-fade 0.18s ease-out;
+}
+
+.pay-overlay__card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 24px 24px;
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.pay-overlay__card:focus,
+.pay-overlay__card:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-lg);
+}
+
+.pay-overlay__spinner {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border: 6px solid var(--ktx-blue-subtle);
+  border-top-color: var(--ktx-blue);
+  border-radius: 50%;
+  animation: pay-spin 0.8s linear infinite;
+}
+
+.pay-overlay__title {
+  font-size: var(--text-heading);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--gray-900);
+  word-break: keep-all;
+}
+
+.pay-overlay__desc {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--gray-600);
+}
+
+.pay-overlay__bar {
+  width: 100%;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+}
+
+.pay-overlay__bar > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ktx-blue);
+  border-radius: var(--radius-full);
+  transform-origin: left center;
+  animation: pay-progress 1.6s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+
+.pay-overlay__clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--gray-700);
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.pay-overlay__clock strong {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+@keyframes pay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pay-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pay-progress {
+  from { transform: scaleX(0.04); }
+  to { transform: scaleX(0.92); }
+}
+
+/* =========================================================
+   반응형
+   ========================================================= */
+@media (max-width: 640px) {
+  .pf-reset {
+    gap: 20px;
+  }
+
+  .pf-demo {
+    flex-wrap: wrap;
+  }
+
+  .pf-demo__text {
+    flex-basis: calc(100% - 40px);
+  }
+
+  .pf .pf-demo__btn {
+    width: 100%;
+  }
+
+  .pf-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pf-tabs.ui-segment > button {
+    font-size: 14px;
+    padding: 0 4px;
+  }
+
+  .pf-tab__icon {
+    display: none;
+  }
+
+  .pf-tile {
+    min-height: 116px;
+  }
+
+  .pf-tile__mark {
+    font-size: 17px;
+  }
+}
